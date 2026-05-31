@@ -1,36 +1,134 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ✈️ TravelEngine: Next-Gen AI Travel Planning & Experience Engine
 
-## Getting Started
+> An all-in-one, state-of-the-art SaaS platform designed to plan, track, and experience the perfect trip.
 
-First, run the development server:
+[![Built with Next.js](https://img.shields.io/badge/Next.js-16.2.6-black?style=flat-square&logo=nextdotjs)](https://nextjs.org)
+[![Database: Neon Serverless](https://img.shields.io/badge/Neon-PostgreSQL-00e699?style=flat-square&logo=postgresql)](https://neon.tech)
+[![ORM: Drizzle](https://img.shields.io/badge/Drizzle-ORM-c5f74f?style=flat-square)](https://orm.drizzle.team)
+[![Styling: CSS & Tailwind](https://img.shields.io/badge/Tailwind-CSS%20v4-38bdf8?style=flat-square&logo=tailwindcss)](https://tailwindcss.com)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## ✨ Features & Architecture
+
+**TravelEngine** consolidates your planning effort into a single, high-fidelity experience. Ditch separate spreadsheets, scattered documents, and disjointed group chats:
+
+*   🤖 **AI Trip Planner:** Generate bespoke itineraries, estimated costs, and curated tips based on active interests, culinary desires, and budget constraints in under 30 seconds.
+*   📅 **Dynamic Schedule Manager:** Responsive drag-and-drop planning timeline that auto-scales budgets when activities are shifted or updated.
+*   💼 **Integrated Travel Wallet:** Secure vault to store hotel confirmations, flight tickets, and passports featuring local AES-256 client-side encryption.
+*   💬 **Context-Aware AI Assistant:** Chat with an AI assistant that has complete structural awareness of your active trip, budget boundaries, and local weather forecasts.
+*   💳 **Visual Budget Tracker:** Live expense logging with visual category analytics and alert thresholds when approaching budget ceilings.
+
+---
+
+## 🏗️ Technical Architecture & Stack
+
+```mermaid
+graph TD
+    UI[Next.js 16 App Router / Tailwind v4] <--> API[Next.js Edge API Routes]
+    API <--> Auth[Next-Auth / JWT Hashing]
+    API <--> ORM[Drizzle ORM]
+    API <--> LLM[OpenAI GPT-4o Model]
+    ORM <--> Neon[(Neon Serverless PostgreSQL)]
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+*   **Core Framework:** [Next.js 16](https://nextjs.org/) (App Router, TypeScript, React 19)
+*   **Database Backend:** [Neon Serverless PostgreSQL](https://neon.tech/)
+*   **ORM Layer:** [Drizzle ORM](https://orm.drizzle.team/)
+*   **Aesthetics & Micro-animations:** TailwindCSS v4, [Framer Motion](https://www.framer.com/motion/), [Lucide React](https://lucide.dev/), & CSS HSL Design Tokens
+*   **Security & Auth:** [Next-Auth](https://next-auth.js.org/) with bcryptjs-hashing and client-side AES-256 encryption for the digital wallet.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📁 Repository Structure
 
-## Learn More
+```filepath
+travelengine/
+├── .env.local             # Local environment secrets & DB credentials
+├── drizzle.config.ts      # Drizzle schema migrations & DB configuration
+├── run.bat                # Unified Windows developer setup & control center
+├── package.json           # Scripts, serverless modules, & dependencies
+├── scripts/
+│   └── seed.js            # Premium database seeder script for Neon Postgres
+├── src/
+│   ├── app/               # Next.js App Router (dashboard, pages, API)
+│   ├── components/        # Reusable UI component libraries (shadcn, cards)
+│   └── lib/
+│       ├── auth/          # Password hashing, JWT creation & token configs
+│       ├── db/            # Drizzle initialization, schema, & migrations
+│       └── utils.ts       # Formatters, currency conversion, & date calculations
+```
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🚀 Setting Up & Getting Started
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 1. Environment Configuration
+**TravelEngine** includes a unified Windows Control Center `run.bat` that automatically initializes configuration variables for you. If you want to configure them manually, create a `.env.local` file inside the `travelengine` directory:
 
-## Deploy on Vercel
+```env
+# Serverless PostgreSQL database connection URL (Neon)
+DATABASE_URL="postgresql://neondb_owner:password@ep-host.us-east-1.aws.neon.tech/neondb?sslmode=require"
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# JSON Web Token encryption secret (Auto-generated by Setup Wizard)
+JWT_SECRET="YOUR_SECURE_JWT_SECRET"
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# OpenAI API Key (Optional - Fallback Mock/Offline Mode used if missing)
+OPENAI_API_KEY="sk-proj-..."
+```
+
+### 2. Synchronization & Database Seeding
+
+We've set up automated pipelines inside the repository to immediately sync and seed your Neon database:
+
+*   **Sync DB Schema:**
+    ```bash
+    npm run db:push
+    ```
+*   **Seed Premium Data:**
+    ```bash
+    npm run db:seed
+    ```
+
+> [!NOTE]
+> The seeder populates a gorgeous, fully-loaded travel portfolio for a user named **Aria Traveler** featuring a multi-day culinary and autumn leaves excursion to **Kyoto, Japan** (tatami Ryokan stays, Gion evening walks, Arashiyama Bamboo treks, and budget graphs!).
+
+---
+
+## ⚡ Development Operations
+
+### The Developer Control Center (Recommended)
+Launch our interactive terminal-based Setup & Control Center wizard directly from the project root:
+```cmd
+.\run.bat
+```
+This utility walks you through:
+1. **Option [1]** - Launching the development server (`npm run dev`)
+2. **Option [2]** - Building and running production builds (`npm run build && npm start`)
+3. **Option [3]** - Syncing the database schema (`npx drizzle-kit push`)
+4. **Option [4]** - Updating configuration secrets inside `.env.local`
+
+### Manual Commands
+If you prefer running commands directly via CLI inside the `/travelengine` directory:
+
+```bash
+# Run Development Server
+npm run dev
+
+# Build for Production
+npm run build
+
+# Start Production Bundle
+npm start
+
+# Run Linting
+npm run lint
+```
+
+---
+
+## 🔑 Default Login Credentials
+Once the server is running on [http://localhost:3000](http://localhost:3000), you can log in using our premium seeded credentials:
+
+*   **Email:** `aria@travelengine.com`
+*   **Password:** `password123`
