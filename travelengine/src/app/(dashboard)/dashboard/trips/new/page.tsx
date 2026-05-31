@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Sparkles,
@@ -57,9 +57,64 @@ export default function NewTripWizardPage() {
   // Form State
   const [destination, setDestination] = useState("");
   const [origin, setOrigin] = useState("");
+  const [destSuggestions, setDestSuggestions] = useState<any[]>([]);
+  const [showDestSuggestions, setShowDestSuggestions] = useState(false);
+  const [originSuggestions, setOriginSuggestions] = useState<any[]>([]);
+  const [showOriginSuggestions, setShowOriginSuggestions] = useState(false);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [budget, setBudget] = useState("");
+
+  // Load user home location on mount to pre-populate origin city
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        const user = JSON.parse(storedUser);
+        if (user.preferences?.homeLocation) {
+          setOrigin(user.preferences.homeLocation);
+        }
+      } catch (e) {
+        console.error("Failed to load user home location for origin pre-fill:", e);
+      }
+    }
+  }, []);
+
+  const fetchSuggestions = async (query: string, type: "destination" | "origin") => {
+    if (query.trim().length < 2) {
+      if (type === "destination") setDestSuggestions([]);
+      else setOriginSuggestions([]);
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=5&language=en&format=json`
+      );
+      const data = await res.json();
+      if (data.results && data.results.length > 0) {
+        if (type === "destination") setDestSuggestions(data.results);
+        else setOriginSuggestions(data.results);
+      } else {
+        if (type === "destination") setDestSuggestions([]);
+        else setOriginSuggestions([]);
+      }
+    } catch (err) {
+      console.error("Geocoding failed:", err);
+    }
+  };
+
+  const handleDestinationChange = (val: string) => {
+    setDestination(val);
+    setShowDestSuggestions(true);
+    fetchSuggestions(val, "destination");
+  };
+
+  const handleOriginChange = (val: string) => {
+    setOrigin(val);
+    setShowOriginSuggestions(true);
+    fetchSuggestions(val, "origin");
+  };
   const [numTravelers, setNumTravelers] = useState(1);
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [hotelPref, setHotelPref] = useState("mid-range");
@@ -229,7 +284,7 @@ export default function NewTripWizardPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5 pt-6">
-              <div className="space-y-2">
+              <div className="space-y-2 relative">
                 <Label htmlFor="destination" className="text-xs font-bold uppercase tracking-wider text-slate-500">
                   Target Destination
                 </Label>
@@ -238,13 +293,39 @@ export default function NewTripWizardPage() {
                   type="text"
                   placeholder="e.g. Tokyo, Japan"
                   value={destination}
-                  onChange={(e) => setDestination(e.target.value)}
+                  onChange={(e) => handleDestinationChange(e.target.value)}
+                  onFocus={() => setShowDestSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowDestSuggestions(false), 200)}
                   className="h-11 border-slate-200 focus:border-blue-500 rounded-xl"
                   required
+                  autoComplete="off"
                 />
+                {showDestSuggestions && destSuggestions.length > 0 && (
+                  <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-slate-200 shadow-xl rounded-xl overflow-hidden max-h-60 overflow-y-auto">
+                    {destSuggestions.map((item) => {
+                      const fullName = [item.name, item.admin1, item.country].filter(Boolean).join(", ");
+                      return (
+                        <div
+                          key={item.id}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setDestination(fullName);
+                            setShowDestSuggestions(false);
+                          }}
+                          className="px-4 py-2.5 hover:bg-slate-50 cursor-pointer text-xs font-semibold text-slate-700 border-b border-slate-100 last:border-b-0 flex items-center justify-between"
+                        >
+                          <span>{fullName}</span>
+                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider bg-slate-100 px-1.5 py-0.5 rounded">
+                            {item.country_code}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 relative">
                 <Label htmlFor="origin" className="text-xs font-bold uppercase tracking-wider text-slate-500">
                   Origin City / Airport
                 </Label>
@@ -253,10 +334,36 @@ export default function NewTripWizardPage() {
                   type="text"
                   placeholder="e.g. San Francisco, USA"
                   value={origin}
-                  onChange={(e) => setOrigin(e.target.value)}
+                  onChange={(e) => handleOriginChange(e.target.value)}
+                  onFocus={() => setShowOriginSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowOriginSuggestions(false), 200)}
                   className="h-11 border-slate-200 focus:border-blue-500 rounded-xl"
                   required
+                  autoComplete="off"
                 />
+                {showOriginSuggestions && originSuggestions.length > 0 && (
+                  <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-slate-200 shadow-xl rounded-xl overflow-hidden max-h-60 overflow-y-auto">
+                    {originSuggestions.map((item) => {
+                      const fullName = [item.name, item.admin1, item.country].filter(Boolean).join(", ");
+                      return (
+                        <div
+                          key={item.id}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setOrigin(fullName);
+                            setShowOriginSuggestions(false);
+                          }}
+                          className="px-4 py-2.5 hover:bg-slate-50 cursor-pointer text-xs font-semibold text-slate-700 border-b border-slate-100 last:border-b-0 flex items-center justify-between"
+                        >
+                          <span>{fullName}</span>
+                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider bg-slate-100 px-1.5 py-0.5 rounded">
+                            {item.country_code}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -345,8 +452,11 @@ export default function NewTripWizardPage() {
                     id="travelers"
                     type="number"
                     min={1}
-                    value={numTravelers}
-                    onChange={(e) => setNumTravelers(parseInt(e.target.value))}
+                    value={isNaN(numTravelers) ? "" : numTravelers}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value);
+                      setNumTravelers(isNaN(val) ? NaN : val);
+                    }}
                     className="pl-10 h-11 border-slate-200 focus:border-blue-500 rounded-xl"
                     required
                   />

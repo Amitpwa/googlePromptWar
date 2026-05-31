@@ -25,6 +25,8 @@ export default function SettingsPage() {
   const [weatherAlerts, setWeatherAlerts] = useState(true);
   const [budgetAlerts, setBudgetAlerts] = useState(true);
   const [conflictAlerts, setConflictAlerts] = useState(true);
+  const [homeLocation, setHomeLocation] = useState("Jodhpur, India");
+  const [detecting, setDetecting] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // Load preferences from local storage on mount
@@ -37,6 +39,7 @@ export default function SettingsPage() {
         if (user.email) setEmail(user.email);
         if (user.preferences?.currency) setCurrency(user.preferences.currency);
         if (user.preferences?.interests) setInterests(user.preferences.interests);
+        if (user.preferences?.homeLocation) setHomeLocation(user.preferences.homeLocation);
       } catch (e) {
         console.error(e);
       }
@@ -49,6 +52,50 @@ export default function SettingsPage() {
     } else {
       setInterests([...interests, interest]);
     }
+  };
+
+  const handleDetectLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error("Geolocation is not supported by your browser");
+      return;
+    }
+    setDetecting(true);
+    const toastId = toast.loading("Detecting your location...");
+    
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          const res = await fetch(
+            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
+          );
+          if (!res.ok) throw new Error("Reverse geocoding failed");
+          const geoData = await res.json();
+          const city = geoData.city || geoData.locality || "";
+          const region = geoData.principalSubdivision || "";
+          const country = geoData.countryName || "";
+          
+          const formatted = [city, region, country].filter(Boolean).join(", ");
+          if (formatted) {
+            setHomeLocation(formatted);
+            toast.success(`Location detected: ${formatted}`, { id: toastId });
+          } else {
+            toast.error("Could not format location. Please enter manually.", { id: toastId });
+          }
+        } catch (err) {
+          console.error(err);
+          toast.error("Failed to fetch location name.", { id: toastId });
+        } finally {
+          setDetecting(false);
+        }
+      },
+      (error) => {
+        console.error(error);
+        toast.error("Location access denied or timed out. Please enter manually.", { id: toastId });
+        setDetecting(false);
+      },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
   };
 
   const handleSave = (e: React.FormEvent) => {
@@ -65,6 +112,7 @@ export default function SettingsPage() {
           weatherAlerts,
           budgetAlerts,
           conflictAlerts,
+          homeLocation,
         },
       };
 
@@ -90,13 +138,23 @@ export default function SettingsPage() {
     "Relaxation",
   ];
 
+  const currenciesList = [
+    { code: "USD", symbol: "$", label: "USD ($)" },
+    { code: "EUR", symbol: "€", label: "EUR (€)" },
+    { code: "INR", symbol: "₹", label: "INR (₹)" },
+    { code: "GBP", symbol: "£", label: "GBP (£)" },
+    { code: "JPY", symbol: "¥", label: "JPY (¥)" },
+    { code: "AUD", symbol: "A$", label: "AUD (A$)" },
+    { code: "CAD", symbol: "C$", label: "CAD (C$)" },
+  ];
+
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-extrabold tracking-tight text-slate-800 flex items-center gap-2">
           <Settings className="w-8 h-8 text-blue-600 animate-spin-slow" />
-          Settings ^& Preferences
+          Settings & Preferences
         </h1>
         <p className="text-slate-500 text-sm mt-1">
           Customize your user profile, currency units, active travel interests, and event alert rules.
@@ -114,7 +172,7 @@ export default function SettingsPage() {
                 Profile Information
               </CardTitle>
               <CardDescription className="text-xs">
-                Update your registration details and how you want to be greeted in the dashboard.
+                Update your registration details, home location, and how you want to be greeted.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -139,6 +197,27 @@ export default function SettingsPage() {
                   />
                 </div>
               </div>
+
+              <div className="space-y-1.5 pt-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Home / Base Location</label>
+                  <button
+                    type="button"
+                    onClick={handleDetectLocation}
+                    disabled={detecting}
+                    className="text-[10px] font-extrabold text-blue-600 hover:text-blue-700 bg-blue-50 px-2 py-0.5 rounded cursor-pointer transition-all hover:bg-blue-100 disabled:opacity-50"
+                  >
+                    {detecting ? "Detecting..." : "Detect My Location"}
+                  </button>
+                </div>
+                <Input
+                  value={homeLocation}
+                  onChange={(e) => setHomeLocation(e.target.value)}
+                  placeholder="e.g. Jodhpur, Rajasthan, India"
+                  className="h-10 border-slate-200 rounded-lg bg-white/50 focus:border-blue-500"
+                  required
+                />
+              </div>
             </CardContent>
           </Card>
 
@@ -147,7 +226,7 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle className="text-base font-bold text-slate-800 flex items-center gap-2">
                 <Wallet className="w-5 h-5 text-teal-500" />
-                Currency ^& Interests Configuration
+                Currency & Interests Configuration
               </CardTitle>
               <CardDescription className="text-xs">
                 These settings will automatically customize your budget units and AI generation prompt engines.
@@ -158,18 +237,18 @@ export default function SettingsPage() {
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Preferred Currency</label>
                 <div className="flex gap-2.5 flex-wrap">
-                  {["USD", "EUR", "JPY", "GBP", "AUD", "CAD"].map((curr) => (
+                  {currenciesList.map((curr) => (
                     <button
-                      key={curr}
+                      key={curr.code}
                       type="button"
-                      onClick={() => setCurrency(curr)}
+                      onClick={() => setCurrency(curr.code)}
                       className={`px-4 py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
-                        currency === curr
+                        currency === curr.code
                           ? "bg-teal-50 border-teal-500 text-teal-700 shadow-sm"
                           : "bg-white/50 border-slate-200 text-slate-600 hover:bg-slate-50"
                       }`}
                     >
-                      {curr}
+                      {curr.label}
                     </button>
                   ))}
                 </div>
@@ -177,7 +256,7 @@ export default function SettingsPage() {
 
               {/* Interests */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Travel Interests ^(Select all that apply^)</label>
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Travel Interests (Select all that apply)</label>
                 <div className="flex gap-2 flex-wrap">
                   {travelInterestsList.map((interest) => {
                     const selected = interests.includes(interest);

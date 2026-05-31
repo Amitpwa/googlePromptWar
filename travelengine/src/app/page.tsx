@@ -1,3 +1,6 @@
+"use client";
+
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Sparkles,
@@ -17,8 +20,25 @@ import {
 } from "lucide-react";
 
 export default function LandingPage() {
+  const [userName, setUserName] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        const parsed = JSON.parse(storedUser);
+        if (parsed.name) {
+          setUserName(parsed.name);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    setLoading(false);
+  }, []);
   return (
-    <div className="flex flex-col min-h-screen overflow-x-hidden bg-slate-50">
+    <div className="flex flex-col min-h-screen overflow-x-clip bg-slate-50">
       {/* Navigation Header */}
       <header className="sticky top-0 z-50 backdrop-blur-md bg-white/75 border-b border-slate-100 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -36,18 +56,37 @@ export default function LandingPage() {
             <a href="#testimonials" className="hover:text-blue-600 transition-colors">Testimonials</a>
           </nav>
           <div className="flex items-center gap-4">
-            <Link
-              href="/login"
-              className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
-            >
-              Sign In
-            </Link>
-            <Link
-              href="/register"
-              className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-all rounded-xl shadow-lg shadow-blue-600/10 hover:shadow-blue-600/20 hover:-translate-y-0.5 active:translate-y-0"
-            >
-              Get Started
-            </Link>
+            {loading ? (
+              <div className="w-20 h-8 bg-slate-100 skeleton rounded-lg" />
+            ) : userName ? (
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-bold text-slate-600 hidden sm:inline">
+                  Hi, {userName}!
+                </span>
+                <Link
+                  href="/dashboard"
+                  className="px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition-all rounded-xl shadow-md shadow-blue-600/10 flex items-center gap-1.5"
+                >
+                  Go to Dashboard
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/register"
+                  className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-all rounded-xl shadow-lg shadow-blue-600/10 hover:shadow-blue-600/20 hover:-translate-y-0.5 active:translate-y-0"
+                >
+                  Get Started
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -83,10 +122,10 @@ export default function LandingPage() {
 
           <div className="flex flex-col sm:flex-row items-center gap-5 w-full sm:w-auto">
             <Link
-              href="/register"
+              href={userName ? "/dashboard" : "/register"}
               className="flex items-center justify-center gap-2 w-full sm:w-auto px-8 py-4 text-base font-bold text-blue-900 bg-white hover:bg-slate-50 transition-all rounded-2xl shadow-xl shadow-slate-900/10 hover:shadow-slate-900/25 hover:-translate-y-1 active:translate-y-0"
             >
-              Start Planning Free
+              {userName ? "Go to Workspace" : "Start Planning Free"}
               <ArrowRight className="w-5 h-5" />
             </Link>
             <a
@@ -327,10 +366,10 @@ export default function LandingPage() {
             Create your account today and experience AI travel planning designed for the modern age. Start your planning effort now.
           </p>
           <Link
-            href="/register"
+            href={userName ? "/dashboard" : "/register"}
             className="px-8 py-4 bg-white text-blue-700 font-bold hover:bg-slate-50 transition-all rounded-2xl shadow-xl shadow-slate-900/10 hover:shadow-slate-900/20 hover:-translate-y-0.5 active:translate-y-0"
           >
-            Get Started Free
+            {userName ? "Go to Workspace" : "Get Started Free"}
           </Link>
         </div>
       </section>
